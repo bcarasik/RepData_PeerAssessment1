@@ -1,25 +1,128 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
+title: "Peer Assessment 1"
+author: "Bob Carasik"
+date: "Saturday, May 09, 2015"
 output: 
   html_document:
-    keep_md: true
+    keep_md: TRUE
 ---
 
+In the first R code chunk, I load libraries, set the directory,  load the dataset,
+and clean the data by preparing a dataset with null data omitted:
 
 ## Loading and preprocessing the data
 
-
+```{r, loadingdata, echo=FALSE, cache=TRUE}
+require(ggplot2)
+library(ggplot2)
+library(grid)
+library(gridExtra)
+setwd("C:/Users/Bob Carasik/Documents/Bob/ReproducibleResearch/Project1")
+if(!exists("rawdata")) {
+  rawdata <- read.csv("activity.csv")
+}  
+  #  clean the data by omitting measurements where steps are "NA"
+actdata <- rawdata[complete.cases(rawdata[,c(1)]),]
+```
 
 ## What is mean total number of steps taken per day?
+Here, I create the plot for the first question and create a histogram of steps per day.  I count the number of days for each range of total steps taken. I then report the mean and median of the total number of steps taken per day.
 
+```{r, stepsperday, echo=FALSE, cache=TRUE}
+thedays <-  unique (actdata$date)
+daycount <- length(thedays)
+daytotals <- data.frame(Date = thedays,
+                        MeanSteps = double(daycount), 
+                        TotalSteps = integer(daycount)
+)
+for(i in 1:daycount) {
+  day <- thedays[i]
+  daytotals[i,]$MeanSteps <- mean(actdata[actdata$date==day,]$steps)
+  daytotals[i,]$TotalSteps <- sum(actdata[actdata$date==day,]$steps)
+} 
+meanStepsPerDay <- mean(daytotals$TotalSteps)
+medianStepsPerDay <- median(daytotals$TotalSteps)
+hplot <- hist(daytotals$TotalSteps, breaks = 8)
+# print (hplot )
+cat(" mean steps per day from raw data ", meanStepsPerDay, " median steps per day ", medianStepsPerDay, "\n")
+```
 
 
 ## What is the average daily activity pattern?
 
+The second part of the assignment is the average daily activity pattern
+I created a time series plot of the 5-minute intervals on the x-axis and the average number of steps taken, averaged across all days on the y-axis.
 
+I then identify the 5-minute interval that contains the maximum number of steps on average across all the days in the dataset. 
+```{r, averageactivity, echo=FALSE}
+intervals <-  unique (actdata$interval)
+intervalcount <- length(intervals)
+intervaltotals <- data.frame(Interval = intervals,
+                        MeanSteps = double(intervalcount), 
+                        TotalSteps = integer(intervalcount),
+                        WeekdaySteps = integer(intervalcount),
+                        WeekendSteps = integer(intervalcount))
+for(i in 1:intervalcount) {
+  interval <- intervals[i]
+  intervaltotals[i,]$MeanSteps <- mean(actdata[actdata$interval==interval,]$steps)
+  intervaltotals[i,]$TotalSteps <- sum(actdata[actdata$interval==interval,]$steps)
+}
+maxintervalStepCount <- max(intervaltotals$TotalSteps)
+maxStepsInterval <- intervaltotals[which(intervaltotals$TotalSteps == 
+                       max(intervaltotals$TotalSteps)),]$Interval
+# Mean steps per interval, for all days
+with ( intervaltotals, plot(Interval, MeanSteps))
+cat(" The interval with the most steps is ", maxStepsInterval, "\n")
+```
 
 ## Imputing missing values
 
+I next create a copy of the raw data set with values imputed where the steps data is absent.  I simply assign the mean number of steps for a given interval when there is no steps data for an interval for a day in the dataset.  I then re-calculate mean and median steps per day where the missing values have been imputed
 
+```{r, imputingdata, echo=FALSE}
+ imputeddata <- rawdata
+ rrows <- nrow(rawdata)
+ for (i in 1:rrows) {
+  if (is.na(rawdata[i,]$steps )) {
+    imputeddata[i,]$steps <- 
+      as.integer(intervaltotals[ intervaltotals$Interval == 
+                                   rawdata[i,]$interval,]$MeanSteps)
+  }
+}
+for(i in 1:daycount) {
+  day <- thedays[i]
+  daytotals[i,]$MeanSteps <- mean(imputeddata[imputeddata$date==day,]$steps)
+  daytotals[i,]$TotalSteps <- sum(imputeddata[imputeddata$date==day,]$steps)
+} 
+meanStepsPerDayImputed <- mean(daytotals$TotalSteps)
+medianStepsPerDayImputed <- median(daytotals$TotalSteps)
 
+hplot <- hist(daytotals$TotalSteps, breaks = 8, main="total steps by day from imputed data")
+cat(" mean steps per day from imputed data ", meanStepsPerDayImputed, " median steps per day ", medianStepsPerDayImputed, "\n")
+```
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Now I add a "weekdays" factor to the imputed data, and I make two plots for steps by interval for weekends and weekdays
+
+```{r, weekendfactor, echo=FALSE}
+library(ggplot2)
+library(grid)
+library(gridExtra)
+imputeddata$weekend <- 
+  ifelse( weekdays(as.Date(imputeddata$date)) == "Saturday" | 
+          weekdays(as.Date(imputeddata$date)) == "Sunday", "Yes", "No")
+#
+for(i in 1:intervalcount) {
+  interval <- intervals[i]
+  intervaltotals[i,]$WeekdaySteps <- 
+      sum(imputeddata[imputeddata$interval==interval & 
+                        imputeddata$weekend == "No",]$steps)
+  intervaltotals[i,]$WeekendSteps <- 
+      sum(imputeddata[imputeddata$interval==interval & 
+                        imputeddata$weekend == "Yes",]$steps)
+}
+weekendplot <- ggplot( intervaltotals, aes(x = Interval, y = WeekendSteps))    + geom_point() + ggtitle("Weekend steps")
+weekdayplot <- ggplot(intervaltotals, aes(x = Interval, y = WeekendSteps))     + geom_point() + ggtitle("Weekday steps")
+grid.arrange(weekendplot, weekdayplot, ncol=2)
+```
+ 
