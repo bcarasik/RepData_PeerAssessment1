@@ -123,6 +123,6 @@ for(i in 1:intervalcount) {
 }
 weekendplot <- ggplot( intervaltotals, aes(x = Interval, y = WeekendSteps))    + geom_point() + ggtitle("Weekend steps")
 weekdayplot <- ggplot(intervaltotals, aes(x = Interval, y = WeekendSteps))     + geom_point() + ggtitle("Weekday steps")
-grid.arrange(weekendplot, weekdayplot, ncol=2)
+grid.arrange(weekendplot, weekdayplot, ncol=1)
 ```
  

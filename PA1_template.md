@@ -44,5 +44,14 @@ I next create a copy of the raw data set with values imputed where the steps dat
 
 Now I add a "weekdays" factor to the imputed data, and I make two plots for steps by interval for weekends and weekdays
 
+
+```
+## Warning: package 'ggplot2' was built under R version 3.1.3
+```
+
+```
+## Warning: package 'gridExtra' was built under R version 3.1.3
+```
+
 ![](PA1_template_files/figure-html/weekendfactor-1.png) 
  
